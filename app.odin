@@ -26,17 +26,17 @@ State :: struct {
 	par_s_program:       u32,
 	screen_vao, par_vao: u32,
 	implicits:           [dynamic]ImplictPlot,
-	width:               f32,
-	grid_offset:         [2]f32,
+	width:               float_var(1),
+	grid_offset:         float_var(2),
 }
 
 state := State {
 	implicits     = make([dynamic]ImplictPlot),
-	width         = 4,
+	width         = make_float_var(4.0),
+	grid_offset   = make_float_var([2]f32{0.0, 0.0}),
 	screen_vao    = 0,
 	par_vao       = 0,
 	par_s_program = 0,
-	grid_offset   = {0, 0},
 }
 
 run_app :: proc() {
@@ -108,12 +108,14 @@ run_app :: proc() {
 		draw()
 
 		// FPS Counter
-		imgui.DrawList_AddText(
-			imgui.GetBackgroundDrawList(),
-			{10, 10},
-			imgui.ColorConvertFloat4ToU32({1.0, 1.0, 1.0, 1.0}),
-			strings.unsafe_string_to_cstring(fmt.tprint("FPS", io.Framerate)),
-		)
+		when ODIN_DEBUG == true {
+			imgui.DrawList_AddText(
+				imgui.GetBackgroundDrawList(),
+				{10, 10},
+				imgui.ColorConvertFloat4ToU32({1.0, 1.0, 1.0, 1.0}),
+				strings.unsafe_string_to_cstring(fmt.tprint("FPS", io.Framerate)),
+			)
+		}
 
 		imgui.Render()
 		imgl3.RenderDrawData(imgui.GetDrawData())
@@ -121,6 +123,15 @@ run_app :: proc() {
 
 		free_all(context.temp_allocator)
 	}
+
+	cleanup()
 }
 
 update :: proc() {}
+
+cleanup :: proc() {
+	for implict in &state.implicits {
+		delete_implicit(&implict)
+	}
+	delete(state.implicits)
+}

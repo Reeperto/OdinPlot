@@ -1,9 +1,10 @@
 package main
 
+import "base:runtime"
+
 import "core:c"
 import "core:log"
 import "core:math"
-
 
 import gl "vendor:OpenGL"
 import "vendor:glfw"
@@ -28,16 +29,10 @@ handle_mouse_pos :: proc(window: glfw.WindowHandle) {
 	dy = last_y - y
 
 	if (glfw.GetMouseButton(window, glfw.MOUSE_BUTTON_LEFT) == glfw.PRESS) {
-		state.grid_offset += {f32(mouse_state.dx / 1024.0), -f32(mouse_state.dy / 1024.0)}
-
-		for plot in &state.implicits {
-			gl.UseProgram(plot.s_program)
-			gl.Uniform2f(
-				plot.uniforms["offset"].location,
-				state.grid_offset[0],
-				state.grid_offset[1],
-			)
-		}
+		update_float_var(
+			&state.grid_offset,
+			state.grid_offset.val + {f32(mouse_state.dx / 1024.0), -f32(mouse_state.dy / 1024.0)},
+		)
 	}
 
 	last_x = x
@@ -45,13 +40,8 @@ handle_mouse_pos :: proc(window: glfw.WindowHandle) {
 }
 
 handle_scroll :: proc "c" (window: glfw.WindowHandle, dx, dy: c.double) {
-	state.width *= 1.0 / (1.0 + math.exp(f32(dy))) + 0.5
-
-	for plot in &state.implicits {
-		gl.UseProgram(plot.s_program)
-		gl.Uniform1f(plot.uniforms["width"].location, state.width)
-	}
-
+	new_width := state.width.val[0] * (1.0 / (1.0 + math.exp(f32(dy))) + 0.5)
+	update_float_var(&state.width, new_width)
 	imglfw.ScrollCallback(window, dx, dy)
 }
 
@@ -64,20 +54,6 @@ handle_key :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods: 
 		switch key {
 		case glfw.KEY_ESCAPE:
 			running = false
-		case glfw.KEY_MINUS:
-			width += 1
-			for &curve in implicits {
-				gl.UseProgram(curve.s_program)
-				gl.Uniform1f(curve.uniforms["width"].location, width)
-			}
-		case glfw.KEY_EQUAL:
-			if mods & glfw.MOD_SHIFT != 0 {
-				width -= 1
-				for &curve in implicits {
-					gl.UseProgram(curve.s_program)
-					gl.Uniform1f(curve.uniforms["width"].location, width)
-				}
-			}
 		}
 	}
 }

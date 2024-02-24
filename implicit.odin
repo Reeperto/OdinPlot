@@ -17,9 +17,8 @@ implicit_fss_template := #load("shaders/implicit_fs_template.glsl", string)
 ImplictPlot :: struct {
 	expression: string,
 	s_program:  u32,
-	uniforms:   gl.Uniforms,
-	color:      [3]f32,
-	thickness:  f32,
+	color:      float_var(3),
+	thickness:  float_var(1),
 }
 
 create_implicit :: proc(
@@ -51,15 +50,27 @@ create_implicit :: proc(
 	if !ok {log.error(err_msg);return}
 	plot.s_program = s_program
 
-	plot.uniforms = gl.get_uniforms_from_program(plot.s_program)
+	uniforms := gl.get_uniforms_from_program(plot.s_program)
 
-	gl.UseProgram(plot.s_program)
-	gl.Uniform2f(plot.uniforms["offset"].location, state.grid_offset[0], state.grid_offset[1])
-	gl.Uniform1f(plot.uniforms["width"].location, state.width)
-	gl.Uniform1f(plot.uniforms["thickness"].location, thickness)
-	gl.Uniform3f(plot.uniforms["line_color"].location, color[0], color[1], color[2])
-	gl.UseProgram(0)
+	// Setup uniforms
+	plot.thickness = make_float_var(thickness)
+	plot.color = make_float_var(color)
+
+	link_program_float_var(plot.s_program, uniforms["width"].location, &state.width)
+	link_program_float_var(plot.s_program, uniforms["offset"].location, &state.grid_offset)
+	link_program_float_var(plot.s_program, uniforms["thickness"].location, &plot.thickness)
+	link_program_float_var(plot.s_program, uniforms["line_color"].location, &plot.color)
 
 	free_all(context.temp_allocator)
 	return
+}
+
+delete_implicit :: proc(plot: ^ImplictPlot) {
+	delete_float_var(&plot.color)
+	delete_float_var(&plot.thickness)
+
+	unlink_program_float_var(plot.s_program, &state.width)
+	unlink_program_float_var(plot.s_program, &state.grid_offset)
+
+	gl.DeleteProgram(plot.s_program)
 }

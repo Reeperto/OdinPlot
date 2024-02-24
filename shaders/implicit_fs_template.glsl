@@ -5,9 +5,10 @@ in vec3 vPos;
 out vec4 fCol;
 
 uniform float width;
-uniform vec3 line_color;
-uniform float thickness;
 uniform vec2 offset;
+
+uniform float thickness;
+uniform vec3 line_color;
 
 float epsilon = thickness * width / 1024.0;
 

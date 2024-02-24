@@ -228,25 +228,25 @@ draw :: proc() {
 		}
 	}
 
-	imgui.BeginTable("Functions", 2)
+	if imgui.BeginTable("Functions", 2) {
+		to_remove := -1
+		for plot, i in state.implicits {
+			imgui.TableNextRow()
+			imgui.TableNextColumn()
+			imgui.Text(strings.unsafe_string_to_cstring(plot.expression))
 
-	to_remove := -1
-	for plot, i in state.implicits {
-		imgui.TableNextRow()
-		imgui.TableNextColumn()
-		imgui.Text(strings.unsafe_string_to_cstring(plot.expression))
-
-		imgui.TableNextColumn()
-		if imgui.Button(strings.unsafe_string_to_cstring(fmt.tprintf("Delete##%v", i))) {
-			to_remove = i
+			imgui.TableNextColumn()
+			if imgui.Button(strings.unsafe_string_to_cstring(fmt.tprintf("Delete##%v", i))) {
+				to_remove = i
+			}
 		}
-	}
 
-	if (to_remove != -1) {
-		gl.DeleteProgram(state.implicits[to_remove].s_program)
-		ordered_remove(&state.implicits, to_remove)
-		to_remove = -1
-	}
+		if (to_remove != -1) {
+			delete_implicit(&state.implicits[to_remove])
+			ordered_remove(&state.implicits, to_remove)
+			to_remove = -1
+		}
 
-	imgui.EndTable()
+		imgui.EndTable()
+	}
 }
